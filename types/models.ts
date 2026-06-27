@@ -37,3 +37,27 @@ export type ChapterRosterMember = {
   membership: ChapterMembership;
   profile: Profile;
 };
+
+export type ChapterEvent = {
+  chapterId: string;
+  createdAt: string;
+  createdBy: string;
+  description: string | null;
+  endsAt: string | null;
+  id: string;
+  isRequired: boolean;
+  location: string | null;
+  startsAt: string;
+  title: string;
+};
+
+export type CreateEventInput = {
+  chapterId: string;
+  createdBy: string;
+  description: string;
+  endsAt: string | null;
+  isRequired: boolean;
+  location: string;
+  startsAt: string;
+  title: string;
+};

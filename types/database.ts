@@ -57,6 +57,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      events: {
+        Row: {
+          chapter_id: string;
+          checkin_closes_at: string | null;
+          checkin_code: string | null;
+          checkin_opens_at: string | null;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          ends_at: string | null;
+          id: string;
+          is_required: boolean;
+          location: string | null;
+          starts_at: string;
+          title: string;
+        };
+        Insert: {
+          chapter_id: string;
+          checkin_closes_at?: string | null;
+          checkin_code?: string | null;
+          checkin_opens_at?: string | null;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          is_required?: boolean;
+          location?: string | null;
+          starts_at: string;
+          title: string;
+        };
+        Update: {
+          chapter_id?: string;
+          checkin_closes_at?: string | null;
+          checkin_code?: string | null;
+          checkin_opens_at?: string | null;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          is_required?: boolean;
+          location?: string | null;
+          starts_at?: string;
+          title?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -99,6 +147,12 @@ export type Database = {
         }[];
       };
       is_chapter_member: {
+        Args: {
+          p_chapter_id: string;
+        };
+        Returns: boolean;
+      };
+      is_chapter_officer: {
         Args: {
           p_chapter_id: string;
         };

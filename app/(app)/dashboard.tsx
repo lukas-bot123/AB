@@ -19,6 +19,7 @@ export default function DashboardScreen() {
   const { activeChapter, error: chapterError } = useChapter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isOfficer = activeChapter?.membership.role === "officer";
 
   async function handleLogout() {
     setError(null);
@@ -65,6 +66,14 @@ export default function DashboardScreen() {
             title="Chapter setup required"
           />
         )}
+
+        <Button onPress={() => router.push("/events")} variant="ghost">
+          View Events
+        </Button>
+
+        {isOfficer ? (
+          <Button onPress={() => router.push("/events/new")}>Create Event</Button>
+        ) : null}
 
         <Button onPress={() => router.push("/members")} variant="ghost">
           View Members
