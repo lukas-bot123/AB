@@ -1,5 +1,12 @@
 import { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  ViewStyle,
+} from "react-native";
 
 import { colors, radii, spacing } from "@/lib/theme";
 
@@ -11,7 +18,7 @@ type ButtonProps = {
   fullWidth?: boolean;
   loading?: boolean;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   variant?: ButtonVariant;
 };
 

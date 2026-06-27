@@ -106,6 +106,25 @@ export type Attendance = {
   updatedAt: string;
 };
 
+export type AttendanceSummary = {
+  absent: number;
+  excused: number;
+  late: number;
+  notMarked: number;
+  present: number;
+};
+
+export type EventAttendanceBoardMember = {
+  attendanceMethod: AttendanceMethod | null;
+  attendanceStatus: AttendanceStatus | null;
+  checkedInAt: string | null;
+  email: string;
+  fullName: string;
+  profileId: string;
+  role: ChapterRole;
+  rsvpStatus: RSVPStatus | null;
+};
+
 export type CheckInSubmission = {
   attendance: Attendance | null;
   message: string;

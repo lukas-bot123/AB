@@ -268,6 +268,23 @@ export type Database = {
           university: string | null;
         }[];
       };
+      set_event_attendance_status: {
+        Args: {
+          p_event_id: string;
+          p_profile_id: string;
+          p_status: "present" | "absent" | "late" | "excused";
+        };
+        Returns: {
+          checked_in_at: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          method: "code" | "manual";
+          profile_id: string;
+          status: "present" | "absent" | "late" | "excused";
+          updated_at: string;
+        };
+      };
       shares_chapter_with_profile: {
         Args: {
           p_profile_id: string;

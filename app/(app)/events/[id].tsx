@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { LoadingState } from "@/components/LoadingState";
 import { MemberCheckInBox } from "@/components/MemberCheckInBox";
 import { OfficerCheckInPanel } from "@/components/OfficerCheckInPanel";
+import { OfficerAttendanceBoard } from "@/components/OfficerAttendanceBoard";
 import { RequiredBadge } from "@/components/RequiredBadge";
 import { RSVPButtons } from "@/components/RSVPButtons";
 import { RsvpSummaryCard } from "@/components/RsvpSummaryCard";
@@ -15,11 +16,24 @@ import { Screen } from "@/components/Screen";
 import { useChapter } from "@/components/ChapterProvider";
 import { formatEventDateRange, getEventTimingLabel } from "@/lib/dates";
 import { colors, spacing } from "@/lib/theme";
-import { getMyAttendanceForEvent } from "@/services/attendance";
+import {
+  buildAttendanceSummary,
+  getEventAttendanceBoard,
+  getMyAttendanceForEvent,
+  setManualAttendanceStatus,
+} from "@/services/attendance";
 import { closeCheckIn, startCheckIn, submitCheckInCode } from "@/services/checkins";
 import { getEventById } from "@/services/events";
 import { getMyRsvpForEvent, getRsvpSummaryForEvent, upsertMyRsvp } from "@/services/rsvps";
-import type { Attendance, ChapterEvent, RSVP, RSVPStatus, RsvpSummary } from "@/types/models";
+import type {
+  Attendance,
+  AttendanceStatus,
+  ChapterEvent,
+  EventAttendanceBoardMember,
+  RSVP,
+  RSVPStatus,
+  RsvpSummary,
+} from "@/types/models";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -31,19 +45,28 @@ export default function EventDetailScreen() {
   const { activeChapter, profile } = useChapter();
   const [event, setEvent] = useState<ChapterEvent | null>(null);
   const [myAttendance, setMyAttendance] = useState<Attendance | null>(null);
+  const [attendanceBoard, setAttendanceBoard] = useState<EventAttendanceBoardMember[]>([]);
   const [myRsvp, setMyRsvp] = useState<RSVP | null>(null);
   const [rsvpSummary, setRsvpSummary] = useState<RsvpSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAttendanceBoardLoading, setIsAttendanceBoardLoading] = useState(false);
   const [isStartingCheckIn, setIsStartingCheckIn] = useState(false);
   const [isClosingCheckIn, setIsClosingCheckIn] = useState(false);
   const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
   const [savingStatus, setSavingStatus] = useState<RSVPStatus | null>(null);
+  const [updatingAttendance, setUpdatingAttendance] = useState<{
+    profileId: string;
+    status: AttendanceStatus;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attendanceBoardError, setAttendanceBoardError] = useState<string | null>(null);
+  const [attendanceUpdateError, setAttendanceUpdateError] = useState<string | null>(null);
   const [checkInError, setCheckInError] = useState<string | null>(null);
   const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [rsvpSuccess, setRsvpSuccess] = useState<string | null>(null);
   const isOfficer = activeChapter?.membership.role === "officer";
+  const attendanceSummary = buildAttendanceSummary(attendanceBoard);
 
   useEffect(() => {
     let isActive = true;
@@ -52,13 +75,16 @@ export default function EventDetailScreen() {
       if (!activeChapter || !eventId || !profile) {
         setEvent(null);
         setMyAttendance(null);
+        setAttendanceBoard([]);
         setMyRsvp(null);
         setRsvpSummary(null);
         setIsLoading(false);
+        setIsAttendanceBoardLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setIsAttendanceBoardLoading(activeChapter.membership.role === "officer");
 
       try {
         const nextEvent = await getEventById(eventId, activeChapter.chapter.id);
@@ -70,13 +96,32 @@ export default function EventDetailScreen() {
           nextEvent && activeChapter.membership.role === "officer"
             ? await getRsvpSummaryForEvent(eventId, activeChapter.chapter.id)
             : null;
+        let nextAttendanceBoard: EventAttendanceBoardMember[] = [];
+        let nextAttendanceBoardError: string | null = null;
+
+        if (nextEvent && activeChapter.membership.role === "officer") {
+          try {
+            nextAttendanceBoard = await getEventAttendanceBoard(
+              eventId,
+              activeChapter.chapter.id,
+            );
+          } catch (boardError) {
+            nextAttendanceBoardError =
+              boardError instanceof Error
+                ? boardError.message
+                : "Unable to load attendance.";
+          }
+        }
 
         if (isActive) {
           setEvent(nextEvent);
           setMyAttendance(nextAttendance);
+          setAttendanceBoard(nextAttendanceBoard);
           setMyRsvp(nextRsvp);
           setRsvpSummary(nextSummary);
           setError(null);
+          setAttendanceBoardError(nextAttendanceBoardError);
+          setAttendanceUpdateError(null);
           setCheckInError(null);
           setCheckInSuccess(null);
           setRsvpError(null);
@@ -89,6 +134,7 @@ export default function EventDetailScreen() {
       } finally {
         if (isActive) {
           setIsLoading(false);
+          setIsAttendanceBoardLoading(false);
         }
       }
     }
@@ -207,6 +253,47 @@ export default function EventDetailScreen() {
     }
   }
 
+  async function handleSetManualAttendanceStatus(
+    profileId: string,
+    status: AttendanceStatus,
+  ) {
+    if (!event || !isOfficer || updatingAttendance) {
+      return;
+    }
+
+    setUpdatingAttendance({ profileId, status });
+    setAttendanceUpdateError(null);
+
+    try {
+      const nextAttendance = await setManualAttendanceStatus(event.id, profileId, status);
+
+      setAttendanceBoard((currentMembers) =>
+        currentMembers.map((member) =>
+          member.profileId === profileId
+            ? {
+                ...member,
+                attendanceMethod: nextAttendance.method,
+                attendanceStatus: nextAttendance.status,
+                checkedInAt: nextAttendance.checkedInAt,
+              }
+            : member,
+        ),
+      );
+
+      if (profile?.id === profileId) {
+        setMyAttendance(nextAttendance);
+      }
+    } catch (nextError) {
+      setAttendanceUpdateError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Unable to update attendance.",
+      );
+    } finally {
+      setUpdatingAttendance(null);
+    }
+  }
+
   if (isLoading) {
     return <LoadingState message="Loading event..." />;
   }
@@ -287,6 +374,18 @@ export default function EventDetailScreen() {
         ) : null}
 
         {event && isOfficer && rsvpSummary ? <RsvpSummaryCard summary={rsvpSummary} /> : null}
+
+        {event && isOfficer ? (
+          <OfficerAttendanceBoard
+            error={attendanceBoardError ?? attendanceUpdateError}
+            isLoading={isAttendanceBoardLoading}
+            members={attendanceBoard}
+            onSetStatus={handleSetManualAttendanceStatus}
+            summary={attendanceSummary}
+            updatingProfileId={updatingAttendance?.profileId ?? null}
+            updatingStatus={updatingAttendance?.status ?? null}
+          />
+        ) : null}
 
         <Button onPress={() => router.push("/events")} variant="secondary">
           Back to Events
