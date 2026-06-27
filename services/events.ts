@@ -17,6 +17,9 @@ function assertSupabaseConfigured() {
 function mapEvent(row: EventRow): ChapterEvent {
   return {
     chapterId: row.chapter_id,
+    checkinClosesAt: row.checkin_closes_at,
+    checkinCode: row.checkin_code,
+    checkinOpensAt: row.checkin_opens_at,
     createdAt: row.created_at,
     createdBy: row.created_by,
     description: row.description,

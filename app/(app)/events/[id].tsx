@@ -6,6 +6,8 @@ import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingState } from "@/components/LoadingState";
+import { MemberCheckInBox } from "@/components/MemberCheckInBox";
+import { OfficerCheckInPanel } from "@/components/OfficerCheckInPanel";
 import { RequiredBadge } from "@/components/RequiredBadge";
 import { RSVPButtons } from "@/components/RSVPButtons";
 import { RsvpSummaryCard } from "@/components/RsvpSummaryCard";
@@ -13,9 +15,11 @@ import { Screen } from "@/components/Screen";
 import { useChapter } from "@/components/ChapterProvider";
 import { formatEventDateRange, getEventTimingLabel } from "@/lib/dates";
 import { colors, spacing } from "@/lib/theme";
+import { getMyAttendanceForEvent } from "@/services/attendance";
+import { closeCheckIn, startCheckIn, submitCheckInCode } from "@/services/checkins";
 import { getEventById } from "@/services/events";
 import { getMyRsvpForEvent, getRsvpSummaryForEvent, upsertMyRsvp } from "@/services/rsvps";
-import type { ChapterEvent, RSVP, RSVPStatus, RsvpSummary } from "@/types/models";
+import type { Attendance, ChapterEvent, RSVP, RSVPStatus, RsvpSummary } from "@/types/models";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -26,11 +30,17 @@ export default function EventDetailScreen() {
   const eventId = firstParam(id);
   const { activeChapter, profile } = useChapter();
   const [event, setEvent] = useState<ChapterEvent | null>(null);
+  const [myAttendance, setMyAttendance] = useState<Attendance | null>(null);
   const [myRsvp, setMyRsvp] = useState<RSVP | null>(null);
   const [rsvpSummary, setRsvpSummary] = useState<RsvpSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStartingCheckIn, setIsStartingCheckIn] = useState(false);
+  const [isClosingCheckIn, setIsClosingCheckIn] = useState(false);
+  const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
   const [savingStatus, setSavingStatus] = useState<RSVPStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkInError, setCheckInError] = useState<string | null>(null);
+  const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [rsvpSuccess, setRsvpSuccess] = useState<string | null>(null);
   const isOfficer = activeChapter?.membership.role === "officer";
@@ -41,6 +51,7 @@ export default function EventDetailScreen() {
     async function loadEvent() {
       if (!activeChapter || !eventId || !profile) {
         setEvent(null);
+        setMyAttendance(null);
         setMyRsvp(null);
         setRsvpSummary(null);
         setIsLoading(false);
@@ -52,6 +63,9 @@ export default function EventDetailScreen() {
       try {
         const nextEvent = await getEventById(eventId, activeChapter.chapter.id);
         const nextRsvp = nextEvent ? await getMyRsvpForEvent(eventId, profile.id) : null;
+        const nextAttendance = nextEvent
+          ? await getMyAttendanceForEvent(eventId, profile.id)
+          : null;
         const nextSummary =
           nextEvent && activeChapter.membership.role === "officer"
             ? await getRsvpSummaryForEvent(eventId, activeChapter.chapter.id)
@@ -59,9 +73,12 @@ export default function EventDetailScreen() {
 
         if (isActive) {
           setEvent(nextEvent);
+          setMyAttendance(nextAttendance);
           setMyRsvp(nextRsvp);
           setRsvpSummary(nextSummary);
           setError(null);
+          setCheckInError(null);
+          setCheckInSuccess(null);
           setRsvpError(null);
           setRsvpSuccess(null);
         }
@@ -82,6 +99,88 @@ export default function EventDetailScreen() {
       isActive = false;
     };
   }, [activeChapter, eventId, profile]);
+
+  async function handleStartCheckIn() {
+    if (!event || isStartingCheckIn || isClosingCheckIn) {
+      return;
+    }
+
+    setIsStartingCheckIn(true);
+    setCheckInError(null);
+    setCheckInSuccess(null);
+
+    try {
+      const nextEvent = await startCheckIn(event.id);
+
+      setEvent(nextEvent);
+      setCheckInSuccess("Check-in is open.");
+    } catch (nextError) {
+      setCheckInError(
+        nextError instanceof Error ? nextError.message : "Unable to start check-in.",
+      );
+    } finally {
+      setIsStartingCheckIn(false);
+    }
+  }
+
+  async function handleCloseCheckIn() {
+    if (!event || isStartingCheckIn || isClosingCheckIn) {
+      return;
+    }
+
+    setIsClosingCheckIn(true);
+    setCheckInError(null);
+    setCheckInSuccess(null);
+
+    try {
+      const nextEvent = await closeCheckIn(event.id);
+
+      setEvent(nextEvent);
+      setCheckInSuccess("Check-in is closed.");
+    } catch (nextError) {
+      setCheckInError(
+        nextError instanceof Error ? nextError.message : "Unable to close check-in.",
+      );
+    } finally {
+      setIsClosingCheckIn(false);
+    }
+  }
+
+  async function handleSubmitCheckInCode(code: string) {
+    if (!event || !profile || isSubmittingCheckIn) {
+      return;
+    }
+
+    if (code.trim().length !== 4) {
+      setCheckInError("Enter the 4-digit check-in code.");
+      setCheckInSuccess(null);
+      return;
+    }
+
+    setIsSubmittingCheckIn(true);
+    setCheckInError(null);
+    setCheckInSuccess(null);
+
+    try {
+      const submission = await submitCheckInCode(event.id, profile.id, code);
+
+      if (
+        submission.result === "checked_in" ||
+        submission.result === "already_checked_in"
+      ) {
+        setMyAttendance(submission.attendance);
+        setCheckInSuccess(submission.message);
+      } else {
+        setCheckInError(submission.message);
+      }
+    } catch (nextError) {
+      setCheckInError(
+        nextError instanceof Error ? nextError.message : "Unable to submit check-in.",
+      );
+    } finally {
+      setIsSubmittingCheckIn(false);
+    }
+  }
 
   async function handleRsvpSelect(status: RSVPStatus) {
     if (!activeChapter || !event || !profile || savingStatus) {
@@ -162,6 +261,29 @@ export default function EventDetailScreen() {
             {rsvpSuccess ? <Text style={styles.success}>{rsvpSuccess}</Text> : null}
             {rsvpError ? <ErrorState message={rsvpError} title="RSVP failed" /> : null}
           </View>
+        ) : null}
+
+        {event && isOfficer ? (
+          <OfficerCheckInPanel
+            error={checkInError}
+            event={event}
+            isClosing={isClosingCheckIn}
+            isStarting={isStartingCheckIn}
+            onClose={handleCloseCheckIn}
+            onStart={handleStartCheckIn}
+            success={checkInSuccess}
+          />
+        ) : null}
+
+        {event && !isOfficer ? (
+          <MemberCheckInBox
+            attendance={myAttendance}
+            error={checkInError}
+            event={event}
+            isSubmitting={isSubmittingCheckIn}
+            onSubmit={handleSubmitCheckInCode}
+            success={checkInSuccess}
+          />
         ) : null}
 
         {event && isOfficer && rsvpSummary ? <RsvpSummaryCard summary={rsvpSummary} /> : null}

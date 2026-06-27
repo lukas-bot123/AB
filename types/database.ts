@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          checked_in_at: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          method: "code" | "manual";
+          profile_id: string;
+          status: "present" | "absent" | "late" | "excused";
+          updated_at: string;
+        };
+        Insert: {
+          checked_in_at?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          method: "code" | "manual";
+          profile_id: string;
+          status: "present" | "absent" | "late" | "excused";
+          updated_at?: string;
+        };
+        Update: {
+          checked_in_at?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          method?: "code" | "manual";
+          profile_id?: string;
+          status?: "present" | "absent" | "late" | "excused";
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       chapter_members: {
         Row: {
           chapter_id: string;
@@ -156,6 +189,41 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      check_in_with_code: {
+        Args: {
+          p_code: string;
+          p_event_id: string;
+        };
+        Returns: {
+          message: string;
+          result:
+            | "already_checked_in"
+            | "checked_in"
+            | "closed"
+            | "not_open"
+            | "wrong_code";
+        }[];
+      };
+      close_event_checkin: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: {
+          chapter_id: string;
+          checkin_closes_at: string | null;
+          checkin_code: string | null;
+          checkin_opens_at: string | null;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          ends_at: string | null;
+          id: string;
+          is_required: boolean;
+          location: string | null;
+          starts_at: string;
+          title: string;
+        };
+      };
       create_chapter_with_membership: {
         Args: {
           p_invite_code: string;
@@ -205,6 +273,26 @@ export type Database = {
           p_profile_id: string;
         };
         Returns: boolean;
+      };
+      start_event_checkin: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: {
+          chapter_id: string;
+          checkin_closes_at: string | null;
+          checkin_code: string | null;
+          checkin_opens_at: string | null;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          ends_at: string | null;
+          id: string;
+          is_required: boolean;
+          location: string | null;
+          starts_at: string;
+          title: string;
+        };
       };
     };
     Enums: Record<string, never>;

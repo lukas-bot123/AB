@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RequiredBadge } from "@/components/RequiredBadge";
+import { getEventCheckInLabel, getEventCheckInState } from "@/lib/checkins";
 import { formatEventDateRange, getEventTimingLabel } from "@/lib/dates";
 import { colors, spacing } from "@/lib/theme";
 import type { ChapterEvent, RSVPStatus } from "@/types/models";
@@ -28,6 +29,8 @@ function formatRsvpStatus(status: RSVPStatus | null) {
 }
 
 export function EventCard({ event, onPress, rsvpStatus }: EventCardProps) {
+  const checkInState = getEventCheckInState(event);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -58,6 +61,10 @@ export function EventCard({ event, onPress, rsvpStatus }: EventCardProps) {
           {formatRsvpStatus(rsvpStatus)}
         </Text>
       ) : null}
+
+      <Text style={[styles.checkIn, checkInState === "open" && styles.checkInOpen]}>
+        {getEventCheckInLabel(event)}
+      </Text>
     </Pressable>
   );
 }
@@ -70,6 +77,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.lg,
     padding: spacing.lg,
+  },
+  checkIn: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  checkInOpen: {
+    color: colors.primaryDark,
   },
   footer: {
     alignItems: "center",

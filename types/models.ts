@@ -7,6 +7,17 @@ export type ChapterRole = "officer" | "member";
 
 export type RSVPStatus = "yes" | "no" | "maybe";
 
+export type AttendanceStatus = "present" | "absent" | "late" | "excused";
+
+export type AttendanceMethod = "code" | "manual";
+
+export type CheckInResultStatus =
+  | "already_checked_in"
+  | "checked_in"
+  | "closed"
+  | "not_open"
+  | "wrong_code";
+
 export type Profile = {
   createdAt: string;
   email: string;
@@ -42,6 +53,9 @@ export type ChapterRosterMember = {
 
 export type ChapterEvent = {
   chapterId: string;
+  checkinClosesAt: string | null;
+  checkinCode: string | null;
+  checkinOpensAt: string | null;
   createdAt: string;
   createdBy: string;
   description: string | null;
@@ -79,4 +93,21 @@ export type RsvpSummary = {
   no: number;
   noResponse: number;
   yes: number;
+};
+
+export type Attendance = {
+  checkedInAt: string | null;
+  createdAt: string;
+  eventId: string;
+  id: string;
+  method: AttendanceMethod;
+  profileId: string;
+  status: AttendanceStatus;
+  updatedAt: string;
+};
+
+export type CheckInSubmission = {
+  attendance: Attendance | null;
+  message: string;
+  result: CheckInResultStatus;
 };
