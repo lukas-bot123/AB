@@ -88,7 +88,14 @@ export default function EventsScreen() {
         ) : null}
 
         {activeChapter && events.length === 0 ? (
-          <EmptyState message="New chapter events will appear here." title="No events yet" />
+          <EmptyState
+            message={
+              isOfficer
+                ? "Create your first event when your chapter is ready."
+                : "Chapter events will appear here when an officer creates them."
+            }
+            title="No events yet"
+          />
         ) : null}
 
         {events.map((event) => (

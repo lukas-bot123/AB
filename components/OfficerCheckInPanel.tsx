@@ -32,8 +32,8 @@ export function OfficerCheckInPanel({
       <View style={styles.header}>
         <Text style={styles.title}>Live Check-In</Text>
 
-        {state === "open" ? <Text style={styles.open}>Open</Text> : null}
-        {state === "closed" ? <Text style={styles.closed}>Closed</Text> : null}
+        {state === "open" ? <Text style={styles.open}>Check-in open</Text> : null}
+        {state === "closed" ? <Text style={styles.closed}>Check-in closed</Text> : null}
         {state === "not_open" ? <Text style={styles.muted}>Not open</Text> : null}
       </View>
 
@@ -48,6 +48,7 @@ export function OfficerCheckInPanel({
 
       {state === "open" ? (
         <View style={styles.stack}>
+          <Text style={styles.copy}>Share this code with members who are physically present.</Text>
           <View style={styles.codeBox}>
             <Text style={styles.codeLabel}>Code</Text>
             <Text style={styles.code}>{event.checkinCode ?? "----"}</Text>

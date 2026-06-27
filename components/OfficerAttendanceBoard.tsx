@@ -17,6 +17,7 @@ type OfficerAttendanceBoardProps = {
   members: EventAttendanceBoardMember[];
   onSetStatus: (profileId: string, status: AttendanceStatus) => void;
   summary: AttendanceSummary;
+  success?: string | null;
   updatingProfileId?: string | null;
   updatingStatus?: AttendanceStatus | null;
 };
@@ -27,6 +28,7 @@ export function OfficerAttendanceBoard({
   members,
   onSetStatus,
   summary,
+  success = null,
   updatingProfileId = null,
   updatingStatus = null,
 }: OfficerAttendanceBoardProps) {
@@ -40,6 +42,7 @@ export function OfficerAttendanceBoard({
       <AttendanceSummaryCard summary={summary} />
 
       {isLoading ? <Text style={styles.loading}>Loading attendance...</Text> : null}
+      {success ? <Text style={styles.success}>{success}</Text> : null}
       {error ? <ErrorState message={error} title="Attendance board issue" /> : null}
 
       {!isLoading && members.length === 0 ? (
@@ -92,6 +95,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
+  },
+  success: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 20,
   },
   title: {
     color: colors.ink,

@@ -59,7 +59,7 @@ export function MemberAttendanceRow({
         <Text style={styles.rsvp}>{labelRsvp(member.rsvpStatus)}</Text>
         {member.attendanceMethod ? (
           <Text style={styles.method}>
-            {member.attendanceMethod === "code" ? "Code check-in" : "Manual"}
+            {member.attendanceMethod === "code" ? "Code check-in" : "Manual correction"}
           </Text>
         ) : null}
       </View>

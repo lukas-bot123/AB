@@ -11,8 +11,8 @@ type RSVPButtonsProps = {
 };
 
 const options: { label: string; status: RSVPStatus }[] = [
-  { label: "Yes", status: "yes" },
-  { label: "No", status: "no" },
+  { label: "Going", status: "yes" },
+  { label: "Not going", status: "no" },
   { label: "Maybe", status: "maybe" },
 ];
 
@@ -53,6 +53,11 @@ export function RSVPButtons({
           return (
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{
+                busy: isSaving,
+                disabled: disabled || savingStatus !== null,
+                selected: isSelected,
+              }}
               disabled={disabled || savingStatus !== null}
               key={option.status}
               onPress={() => onSelect(option.status)}

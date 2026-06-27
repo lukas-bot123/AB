@@ -31,6 +31,11 @@ export function MemberCheckInBox({
   const [code, setCode] = useState("");
   const state = getEventCheckInState(event);
   const isCheckedIn = attendance?.status === "present" && attendance.checkedInAt !== null;
+  const isMarkedLate = attendance?.status === "late";
+  const isMarkedAbsent = attendance?.status === "absent";
+  const isMarkedExcused = attendance?.status === "excused";
+  const hasManualAttendance = attendance?.method === "manual" && !isCheckedIn;
+  const canSubmitCode = state === "open" && !isCheckedIn && !hasManualAttendance;
 
   function handleSubmit() {
     onSubmit(code);
@@ -42,24 +47,41 @@ export function MemberCheckInBox({
         <Text style={styles.title}>Check-In</Text>
 
         {isCheckedIn ? <Text style={styles.open}>Checked in</Text> : null}
-        {!isCheckedIn && state === "open" ? <Text style={styles.open}>Open</Text> : null}
-        {!isCheckedIn && state === "closed" ? <Text style={styles.closed}>Closed</Text> : null}
-        {!isCheckedIn && state === "not_open" ? <Text style={styles.muted}>Not open</Text> : null}
+        {hasManualAttendance ? <Text style={styles.muted}>Attendance marked</Text> : null}
+        {canSubmitCode ? <Text style={styles.open}>Check-in open</Text> : null}
+        {!isCheckedIn && !hasManualAttendance && state === "closed" ? (
+          <Text style={styles.closed}>Check-in closed</Text>
+        ) : null}
+        {!isCheckedIn && !hasManualAttendance && state === "not_open" ? (
+          <Text style={styles.muted}>Not open</Text>
+        ) : null}
       </View>
 
       {isCheckedIn ? (
         <Text style={styles.copy}>You're checked in for this event.</Text>
       ) : null}
 
-      {!isCheckedIn && state === "not_open" ? (
+      {!isCheckedIn && isMarkedLate ? (
+        <Text style={styles.copy}>An officer marked you late for this event.</Text>
+      ) : null}
+
+      {!isCheckedIn && isMarkedAbsent ? (
+        <Text style={styles.copy}>An officer marked you absent for this event.</Text>
+      ) : null}
+
+      {!isCheckedIn && isMarkedExcused ? (
+        <Text style={styles.copy}>An officer marked you excused for this event.</Text>
+      ) : null}
+
+      {!isCheckedIn && !hasManualAttendance && state === "not_open" ? (
         <Text style={styles.copy}>Check-in is not open yet.</Text>
       ) : null}
 
-      {!isCheckedIn && state === "closed" ? (
+      {!isCheckedIn && !hasManualAttendance && state === "closed" ? (
         <Text style={styles.copy}>Check-in is closed for this event.</Text>
       ) : null}
 
-      {!isCheckedIn && state === "open" ? (
+      {canSubmitCode ? (
         <View style={styles.form}>
           <TextField
             error={null}

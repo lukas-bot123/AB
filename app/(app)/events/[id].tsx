@@ -61,6 +61,7 @@ export default function EventDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [attendanceBoardError, setAttendanceBoardError] = useState<string | null>(null);
   const [attendanceUpdateError, setAttendanceUpdateError] = useState<string | null>(null);
+  const [attendanceUpdateSuccess, setAttendanceUpdateSuccess] = useState<string | null>(null);
   const [checkInError, setCheckInError] = useState<string | null>(null);
   const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function EventDetailScreen() {
           setError(null);
           setAttendanceBoardError(nextAttendanceBoardError);
           setAttendanceUpdateError(null);
+          setAttendanceUpdateSuccess(null);
           setCheckInError(null);
           setCheckInSuccess(null);
           setRsvpError(null);
@@ -263,6 +265,7 @@ export default function EventDetailScreen() {
 
     setUpdatingAttendance({ profileId, status });
     setAttendanceUpdateError(null);
+    setAttendanceUpdateSuccess(null);
 
     try {
       const nextAttendance = await setManualAttendanceStatus(event.id, profileId, status);
@@ -283,6 +286,8 @@ export default function EventDetailScreen() {
       if (profile?.id === profileId) {
         setMyAttendance(nextAttendance);
       }
+
+      setAttendanceUpdateSuccess("Attendance updated.");
     } catch (nextError) {
       setAttendanceUpdateError(
         nextError instanceof Error
@@ -382,6 +387,7 @@ export default function EventDetailScreen() {
             members={attendanceBoard}
             onSetStatus={handleSetManualAttendanceStatus}
             summary={attendanceSummary}
+            success={attendanceUpdateSuccess}
             updatingProfileId={updatingAttendance?.profileId ?? null}
             updatingStatus={updatingAttendance?.status ?? null}
           />

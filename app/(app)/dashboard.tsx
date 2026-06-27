@@ -35,7 +35,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <Screen scroll={false} subtitle="Your chapter workspace is ready." title="Charter">
+    <Screen subtitle="Your chapter workspace is ready." title="Charter">
       <View style={styles.content}>
         {error ? <ErrorState message={error} title="Logout failed" /> : null}
         {chapterError ? <ErrorState message={chapterError} title="Chapter load failed" /> : null}

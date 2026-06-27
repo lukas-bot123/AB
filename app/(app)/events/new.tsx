@@ -104,7 +104,10 @@ export default function NewEventScreen() {
   }
 
   return (
-    <Screen subtitle={activeChapter?.chapter.name ?? "Chapter event"} title="Create Event">
+    <Screen
+      subtitle="Add the details members need to decide and show up."
+      title="Create Event"
+    >
       <View style={styles.stack}>
         {formError ? <ErrorState message={formError} title="Event failed to save" /> : null}
 
@@ -143,7 +146,7 @@ export default function NewEventScreen() {
             editable={!isSubmitting}
             label="Location"
             onChangeText={setLocation}
-            placeholder="Optional"
+            placeholder="Optional, but helpful"
             value={location}
           />
 
@@ -176,7 +179,7 @@ export default function NewEventScreen() {
           </Button>
         </View>
 
-        <Button onPress={() => router.push("/events")} variant="secondary">
+        <Button disabled={isSubmitting} onPress={() => router.push("/events")} variant="secondary">
           Back to Events
         </Button>
       </View>

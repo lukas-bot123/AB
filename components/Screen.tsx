@@ -47,13 +47,19 @@ export function Screen({ children, footer, scroll = true, subtitle, title }: Scr
 
 const styles = StyleSheet.create({
   content: {
+    alignSelf: "center",
     flexGrow: 1,
+    maxWidth: 720,
     padding: spacing.xl,
+    width: "100%",
   },
   footer: {
+    alignSelf: "center",
     borderTopColor: colors.line,
     borderTopWidth: StyleSheet.hairlineWidth,
+    maxWidth: 720,
     padding: spacing.lg,
+    width: "100%",
   },
   header: {
     gap: spacing.sm,
@@ -67,8 +73,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   staticContent: {
+    alignSelf: "center",
     flex: 1,
+    maxWidth: 720,
     padding: spacing.xl,
+    width: "100%",
   },
   subtitle: {
     color: colors.muted,
