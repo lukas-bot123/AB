@@ -3,14 +3,31 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { RequiredBadge } from "@/components/RequiredBadge";
 import { formatEventDateRange, getEventTimingLabel } from "@/lib/dates";
 import { colors, spacing } from "@/lib/theme";
-import type { ChapterEvent } from "@/types/models";
+import type { ChapterEvent, RSVPStatus } from "@/types/models";
 
 type EventCardProps = {
   event: ChapterEvent;
   onPress: () => void;
+  rsvpStatus?: RSVPStatus | null;
 };
 
-export function EventCard({ event, onPress }: EventCardProps) {
+function formatRsvpStatus(status: RSVPStatus | null) {
+  if (status === "yes") {
+    return "RSVP: Going";
+  }
+
+  if (status === "no") {
+    return "RSVP: Not going";
+  }
+
+  if (status === "maybe") {
+    return "RSVP: Maybe";
+  }
+
+  return "Needs RSVP";
+}
+
+export function EventCard({ event, onPress, rsvpStatus }: EventCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -35,6 +52,12 @@ export function EventCard({ event, onPress }: EventCardProps) {
           </Text>
         ) : null}
       </View>
+
+      {rsvpStatus !== undefined ? (
+        <Text style={[styles.rsvp, rsvpStatus === null && styles.rsvpNeeded]}>
+          {formatRsvpStatus(rsvpStatus)}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -74,6 +97,14 @@ const styles = StyleSheet.create({
   },
   pressed: {
     transform: [{ translateY: 1 }],
+  },
+  rsvp: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  rsvpNeeded: {
+    color: colors.warning,
   },
   status: {
     color: colors.accent,

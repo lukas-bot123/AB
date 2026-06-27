@@ -126,6 +126,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      rsvps: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          profile_id: string;
+          status: "yes" | "no" | "maybe";
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          profile_id: string;
+          status: "yes" | "no" | "maybe";
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          profile_id?: string;
+          status?: "yes" | "no" | "maybe";
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

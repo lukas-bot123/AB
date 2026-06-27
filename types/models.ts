@@ -5,6 +5,8 @@ export type AuthFormState = {
 
 export type ChapterRole = "officer" | "member";
 
+export type RSVPStatus = "yes" | "no" | "maybe";
+
 export type Profile = {
   createdAt: string;
   email: string;
@@ -60,4 +62,21 @@ export type CreateEventInput = {
   location: string;
   startsAt: string;
   title: string;
+};
+
+export type RSVP = {
+  createdAt: string;
+  eventId: string;
+  id: string;
+  profileId: string;
+  status: RSVPStatus;
+  updatedAt: string;
+};
+
+export type RsvpSummary = {
+  expectedAttendance: number;
+  maybe: number;
+  no: number;
+  noResponse: number;
+  yes: number;
 };

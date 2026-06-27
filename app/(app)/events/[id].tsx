@@ -7,12 +7,15 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingState } from "@/components/LoadingState";
 import { RequiredBadge } from "@/components/RequiredBadge";
+import { RSVPButtons } from "@/components/RSVPButtons";
+import { RsvpSummaryCard } from "@/components/RsvpSummaryCard";
 import { Screen } from "@/components/Screen";
 import { useChapter } from "@/components/ChapterProvider";
 import { formatEventDateRange, getEventTimingLabel } from "@/lib/dates";
 import { colors, spacing } from "@/lib/theme";
 import { getEventById } from "@/services/events";
-import type { ChapterEvent } from "@/types/models";
+import { getMyRsvpForEvent, getRsvpSummaryForEvent, upsertMyRsvp } from "@/services/rsvps";
+import type { ChapterEvent, RSVP, RSVPStatus, RsvpSummary } from "@/types/models";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -21,17 +24,25 @@ function firstParam(value: string | string[] | undefined) {
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
   const eventId = firstParam(id);
-  const { activeChapter } = useChapter();
+  const { activeChapter, profile } = useChapter();
   const [event, setEvent] = useState<ChapterEvent | null>(null);
+  const [myRsvp, setMyRsvp] = useState<RSVP | null>(null);
+  const [rsvpSummary, setRsvpSummary] = useState<RsvpSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [savingStatus, setSavingStatus] = useState<RSVPStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [rsvpSuccess, setRsvpSuccess] = useState<string | null>(null);
+  const isOfficer = activeChapter?.membership.role === "officer";
 
   useEffect(() => {
     let isActive = true;
 
     async function loadEvent() {
-      if (!activeChapter || !eventId) {
+      if (!activeChapter || !eventId || !profile) {
         setEvent(null);
+        setMyRsvp(null);
+        setRsvpSummary(null);
         setIsLoading(false);
         return;
       }
@@ -40,10 +51,19 @@ export default function EventDetailScreen() {
 
       try {
         const nextEvent = await getEventById(eventId, activeChapter.chapter.id);
+        const nextRsvp = nextEvent ? await getMyRsvpForEvent(eventId, profile.id) : null;
+        const nextSummary =
+          nextEvent && activeChapter.membership.role === "officer"
+            ? await getRsvpSummaryForEvent(eventId, activeChapter.chapter.id)
+            : null;
 
         if (isActive) {
           setEvent(nextEvent);
+          setMyRsvp(nextRsvp);
+          setRsvpSummary(nextSummary);
           setError(null);
+          setRsvpError(null);
+          setRsvpSuccess(null);
         }
       } catch (nextError) {
         if (isActive) {
@@ -61,7 +81,32 @@ export default function EventDetailScreen() {
     return () => {
       isActive = false;
     };
-  }, [activeChapter, eventId]);
+  }, [activeChapter, eventId, profile]);
+
+  async function handleRsvpSelect(status: RSVPStatus) {
+    if (!activeChapter || !event || !profile || savingStatus) {
+      return;
+    }
+
+    setSavingStatus(status);
+    setRsvpError(null);
+    setRsvpSuccess(null);
+
+    try {
+      const nextRsvp = await upsertMyRsvp(event.id, profile.id, status);
+      const nextSummary = isOfficer
+        ? await getRsvpSummaryForEvent(event.id, activeChapter.chapter.id)
+        : rsvpSummary;
+
+      setMyRsvp(nextRsvp);
+      setRsvpSummary(nextSummary);
+      setRsvpSuccess("RSVP saved.");
+    } catch (nextError) {
+      setRsvpError(nextError instanceof Error ? nextError.message : "Unable to save RSVP.");
+    } finally {
+      setSavingStatus(null);
+    }
+  }
 
   if (isLoading) {
     return <LoadingState message="Loading event..." />;
@@ -104,6 +149,22 @@ export default function EventDetailScreen() {
             ) : null}
           </View>
         )}
+
+        {event ? (
+          <View style={styles.stack}>
+            <RSVPButtons
+              disabled={!profile}
+              onSelect={handleRsvpSelect}
+              savingStatus={savingStatus}
+              value={myRsvp?.status ?? null}
+            />
+
+            {rsvpSuccess ? <Text style={styles.success}>{rsvpSuccess}</Text> : null}
+            {rsvpError ? <ErrorState message={rsvpError} title="RSVP failed" /> : null}
+          </View>
+        ) : null}
+
+        {event && isOfficer && rsvpSummary ? <RsvpSummaryCard summary={rsvpSummary} /> : null}
 
         <Button onPress={() => router.push("/events")} variant="secondary">
           Back to Events
@@ -164,6 +225,11 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  success: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "800",
   },
   title: {
     color: colors.ink,

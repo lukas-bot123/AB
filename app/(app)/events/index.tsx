@@ -11,11 +11,13 @@ import { Screen } from "@/components/Screen";
 import { useChapter } from "@/components/ChapterProvider";
 import { spacing } from "@/lib/theme";
 import { getChapterEvents } from "@/services/events";
+import { getRsvpsForChapterEvents, type RsvpStatusByEventId } from "@/services/rsvps";
 import type { ChapterEvent } from "@/types/models";
 
 export default function EventsScreen() {
-  const { activeChapter } = useChapter();
+  const { activeChapter, profile } = useChapter();
   const [events, setEvents] = useState<ChapterEvent[]>([]);
+  const [rsvpStatuses, setRsvpStatuses] = useState<RsvpStatusByEventId>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isOfficer = activeChapter?.membership.role === "officer";
@@ -26,6 +28,7 @@ export default function EventsScreen() {
     async function loadEvents() {
       if (!activeChapter) {
         setEvents([]);
+        setRsvpStatuses({});
         setIsLoading(false);
         return;
       }
@@ -34,9 +37,16 @@ export default function EventsScreen() {
 
       try {
         const nextEvents = await getChapterEvents(activeChapter.chapter.id);
+        const nextRsvpStatuses = profile
+          ? await getRsvpsForChapterEvents(
+              nextEvents.map((event) => event.id),
+              profile.id,
+            )
+          : {};
 
         if (isActive) {
           setEvents(nextEvents);
+          setRsvpStatuses(nextRsvpStatuses);
           setError(null);
         }
       } catch (nextError) {
@@ -55,7 +65,7 @@ export default function EventsScreen() {
     return () => {
       isActive = false;
     };
-  }, [activeChapter]);
+  }, [activeChapter, profile]);
 
   if (isLoading) {
     return <LoadingState message="Loading events..." />;
@@ -86,6 +96,7 @@ export default function EventsScreen() {
             event={event}
             key={event.id}
             onPress={() => router.push(`/events/${event.id}`)}
+            rsvpStatus={profile ? rsvpStatuses[event.id] ?? null : undefined}
           />
         ))}
 
